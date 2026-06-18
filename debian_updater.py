@@ -51,11 +51,36 @@ try:
         QVBoxLayout,
         QWidget,
     )
-except ImportError as exc:
-    print("PySide6 is required to run the graphical updater.")
-    print("Install it with: sudo apt install python3-pyside6.qtwidgets policykit-1 ksshaskpass")
-    print("Or with pip in a virtual environment: pip install -r requirements.txt")
-    raise SystemExit(1) from exc
+    HAS_GUI = True
+except ImportError:
+    HAS_GUI = False
+
+    # Define minimal dummy types and functions for module compilation on headless hosts
+    class QObject:
+        pass
+
+    class QMainWindow:
+        pass
+
+    class Qt:
+        TextSelectableByMouse = 1
+
+    class QFont:
+        Monospace = 1
+
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def setStyleHint(self, *args, **kwargs) -> None:
+            pass
+
+    def Slot(*args, **kwargs):
+        return lambda func: func
+
+    def Signal(*args, **kwargs):
+        return None
+
+GUI_MODE = True
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -472,15 +497,28 @@ def read_os_release() -> dict[str, str]:
     return values
 
 
+def is_display_available() -> bool:
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
 def command_with_privilege(command: Sequence[str], requires_root: bool) -> CommandSpec:
     if not requires_root or os.geteuid() == 0:
         return CommandSpec(tuple(command))
+
+    sudo = shutil.which("sudo")
+
+    if not GUI_MODE:
+        # In CLI/TUI mode, standard console sudo is preferred
+        if sudo is not None:
+            return CommandSpec((sudo, *command))
+        raise RuntimeError(
+            "This command requires root privileges, but sudo was not found on this system."
+        )
 
     pkexec = shutil.which("pkexec")
     if pkexec is not None:
         return CommandSpec((pkexec, *command))
 
-    sudo = shutil.which("sudo")
     askpass = find_askpass()
     if sudo is not None and askpass is not None:
         env = os.environ.copy()
@@ -541,10 +579,117 @@ def estimate_eta(done: int, total: int, elapsed: float) -> float:
     return (elapsed / done) * (total - done)
 
 
+def run_cli() -> int:
+    print("==========================================")
+    print(" Debian GNU+Linux System Updater (CLI)    ")
+    print("==========================================")
+
+    warning = trixie_warning()
+    if warning:
+        print(f"\n{warning}\n")
+
+    steps = build_steps()
+    if not steps:
+        print("No steps to run.")
+        return 0
+
+    logger = FileLogger()
+    print(f"Writing log to {logger.path}")
+    logger.write("info", f"Writing log to {logger.path}")
+
+    exit_code = 0
+    failures = []
+
+    for index, step in enumerate(steps, start=1):
+        print(f"\n[{index}/{len(steps)}] Starting: {step.name}")
+        logger.write("info", f"Starting step: {step.name}")
+
+        try:
+            command = command_with_privilege(step.command, step.requires_root)
+            logger.write("info", f"Command: {printable_command(command.argv)}")
+
+            process = subprocess.Popen(
+                command.argv,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                env=command.env,
+            )
+
+            assert process.stdout is not None
+            for line in process.stdout:
+                line_str = line.rstrip()
+                print(line_str)
+                logger.write("info", line_str)
+
+            return_code = process.wait()
+            logger.write("info", f"Finished step: {step.name} with exit code {return_code}")
+
+            if return_code != 0:
+                raise subprocess.CalledProcessError(return_code, command.argv)
+
+        except subprocess.CalledProcessError as exc:
+            message = f"{step.name} failed with exit code {exc.returncode}"
+            print(f"Error: {message}")
+            logger.write("error", message)
+            if step.optional:
+                failures.append(f"optional: {message}")
+                continue
+            exit_code = exc.returncode
+            break
+        except Exception as exc:
+            exit_code = 1
+            message = f"{step.name} could not start: {exc}"
+            print(f"Error: {message}")
+            logger.write("error", message)
+            break
+
+    logger.write("info", f"Exit code: {exit_code}")
+    if exit_code == 0:
+        if failures:
+            summary = "Completed with optional failures:\n" + "\n".join(f"- {f}" for f in failures)
+            print(f"\nWarning: {summary}")
+            logger.write("warning", summary)
+        else:
+            print("\nUpdate completed successfully!")
+            logger.write("info", "Completed successfully.")
+    else:
+        print(f"\nUpdate failed with exit code {exit_code}.")
+        logger.write("error", f"Failed with exit code {exit_code}.")
+
+    logger.close()
+    return exit_code
+
+
 def main() -> int:
     if APT_HELPER_ARG in sys.argv:
         return run_apt_helper()
 
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Debian GNU+Linux Updater")
+        print("Usage: debian-updater [options]")
+        print("Options:")
+        print("  -c, --cli      Force terminal command-line interface (CLI) mode")
+        print("  -h, --help     Show this help message and exit")
+        return 0
+
+    force_cli = "--cli" in sys.argv or "-c" in sys.argv
+
+    global GUI_MODE
+    if force_cli:
+        GUI_MODE = False
+    else:
+        GUI_MODE = HAS_GUI and is_display_available()
+
+    if not GUI_MODE:
+        if not HAS_GUI and not force_cli:
+            print("Note: PySide6 is not installed. Falling back to CLI mode.")
+        elif not is_display_available() and not force_cli:
+            print("Note: No display server detected. Falling back to CLI mode.")
+        return run_cli()
+
+    # GUI Mode
     app = QApplication(sys.argv)
     app.setApplicationName("Debian Updater")
     app.setDesktopFileName("debian-updater")

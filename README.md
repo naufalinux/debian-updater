@@ -68,7 +68,22 @@ You can also run it through Python:
 python3 debian_updater.py
 ```
 
-The app opens a small desktop window with:
+### CLI / Headless Fallback Mode
+
+The app features a robust terminal (CLI) mode that activates automatically or via options:
+- **Automatic Fallback**: If `PySide6` (Qt 6) is not installed, or if no Wayland/X11 display connection is found (e.g., running on a headless server over SSH), the script automatically boots into CLI mode.
+- **Force CLI Mode**: You can force the application to run in the terminal even if a GUI session is available using the `-c` or `--cli` flag:
+  ```bash
+  ./debian_updater.py --cli
+  ```
+- **Help Options**: You can view the help summary using `-h` or `--help`:
+  ```bash
+  ./debian_updater.py --help
+  ```
+
+In CLI mode, progress is printed directly to standard output, while maintaining log files under `.logs/` (or the local user data directory when installed). Privilege elevation uses standard terminal-based `sudo` to prompt for credentials inline.
+
+The app opens a small desktop window in GUI mode with:
 
 - `Start System Update`
 - `Show Terminal Output` / `Show GUI Progress`

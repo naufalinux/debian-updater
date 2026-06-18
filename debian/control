@@ -9,10 +9,10 @@ Package: debian-updater
 Architecture: all
 Depends: ${python3:Depends},
          ${misc:Depends},
-         python3-pyside6.qtwidgets,
-         pkexec,
-         ksshaskpass
-Recommends: flatpak
+         pkexec | sudo
+Recommends: python3-pyside6.qtwidgets,
+            ksshaskpass,
+            flatpak
 Description: Clean-safe APT and Flatpak updater for Debian 13 trixie
  A simple Qt desktop updater for Debian 13 trixie and KDE Plasma 6.
  The app runs a conservative APT and Flatpak update workflow, writes a
