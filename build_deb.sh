@@ -22,6 +22,7 @@ rm -f "$OUTPUT_DEB"
 # Recreate folder structure
 mkdir -p "$STAGING_DIR/usr/bin"
 mkdir -p "$STAGING_DIR/usr/share/applications"
+mkdir -p "$STAGING_DIR/usr/share/doc/$PACKAGE_NAME"
 mkdir -p "$STAGING_DIR/DEBIAN"
 
 # Copy python executable and remove .py extension
@@ -30,6 +31,11 @@ chmod 755 "$STAGING_DIR/usr/bin/debian-updater"
 
 # Copy desktop file
 cp debian/debian-updater.desktop "$STAGING_DIR/usr/share/applications/debian-updater.desktop"
+
+# Copy copyright and changelog (and compress changelog)
+cp debian/copyright "$STAGING_DIR/usr/share/doc/$PACKAGE_NAME/copyright"
+cp debian/changelog "$STAGING_DIR/usr/share/doc/$PACKAGE_NAME/changelog"
+gzip -9n "$STAGING_DIR/usr/share/doc/$PACKAGE_NAME/changelog"
 
 # Write the control file for dpkg-deb
 cat << EOF > "$STAGING_DIR/DEBIAN/control"

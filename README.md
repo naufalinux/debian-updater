@@ -255,3 +255,7 @@ Check whether graphical privilege helpers are available:
 ```bash
 command -v pkexec || command -v ksshaskpass
 ```
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 or later. See the [LICENSE](LICENSE) file for the full license text.
