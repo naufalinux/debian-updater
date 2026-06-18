@@ -1,6 +1,6 @@
-# Debian Updater
+# Debian GNU+Linux Updater
 
-A simple Qt desktop updater for Debian 13 trixie (Stable) and KDE Plasma 6. The app runs
+A simple Qt desktop updater for Debian 13 trixie (Stable) GNU+Linux and KDE Plasma 6. The app runs
 a conservative APT and Flatpak update workflow, writes a timestamped log file
 under `.logs/`, and lets you switch between a graphical progress view and a
 terminal-style output view.
