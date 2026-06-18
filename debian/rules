@@ -1,0 +1,9 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --with python3
+
+override_dh_install:
+	dh_install
+	mv debian/debian-updater/usr/bin/debian_updater.py debian/debian-updater/usr/bin/debian-updater
+	chmod 755 debian/debian-updater/usr/bin/debian-updater

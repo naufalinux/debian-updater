@@ -1,0 +1,20 @@
+Source: debian-updater
+Section: utils
+Priority: optional
+Maintainer: Debian Updater Developer <developer@debian.org>
+Build-Depends: debhelper-compat (= 13), dh-python, python3
+Standards-Version: 4.6.2
+
+Package: debian-updater
+Architecture: all
+Depends: ${python3:Depends},
+         ${misc:Depends},
+         python3-pyside6.qtwidgets,
+         pkexec,
+         ksshaskpass
+Recommends: flatpak
+Description: Clean-safe APT and Flatpak updater for Debian 13 trixie
+ A simple Qt desktop updater for Debian 13 trixie and KDE Plasma 6.
+ The app runs a conservative APT and Flatpak update workflow, writes a
+ timestamped log file, and lets you switch between a graphical progress
+ view and a terminal-style output view.

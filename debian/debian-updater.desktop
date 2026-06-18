@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Debian Updater
+Comment=Clean-safe APT and Flatpak updater for Debian 13 trixie
+Exec=debian-updater
+Icon=system-software-update
+Terminal=false
+Categories=Qt;KDE;System;Utility;
+StartupNotify=true

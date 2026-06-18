@@ -1,0 +1,2 @@
+debian_updater.py usr/bin
+debian/debian-updater.desktop usr/share/applications

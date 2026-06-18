@@ -1,0 +1,4 @@
+# Python package requirement for virtual environments.
+# On Debian 13 trixie with KDE Plasma 6, prefer the system packages:
+#   sudo apt install python3-pyside6.qtwidgets policykit-1 ksshaskpass
+PySide6>=6.7
